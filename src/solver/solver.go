@@ -6,6 +6,7 @@ import (
 
 	"tucil3/graph"
 	"tucil3/parser"
+	"tucil3/searchtrace"
 )
 
 type Algorithm int
@@ -19,11 +20,11 @@ const (
 // Node pada search tree
 // graph.Node menyimpan state permainan, searchNode menyimpan node untuk pathfinding
 type SearchNode struct {
-	Node graph.Node
-	Parent *SearchNode // SearchNode sebelumnya
-	Move graph.Dir
-	GCost int
-	HCost int
+	Node     graph.Node
+	Parent   *SearchNode // SearchNode sebelumnya
+	Move     graph.Dir
+	GCost    int
+	HCost    int
 	Priority int
 	StepPath []graph.Pos
 
@@ -34,34 +35,43 @@ type SearchNode struct {
 type Result struct {
 	Found bool
 
-	Moves []graph.Dir
-	PathNodes[]graph.Node
+	Moves     []graph.Dir
+	PathNodes []graph.Node
 	StepPaths [][]graph.Pos
 
-	TotalCost int
-	Iterations int
+	TotalCost   int
+	Iterations  int
 	ExecutionMs int64
 }
 
 func graphSearch(board *parser.BoardConfig, algorithm Algorithm, heuristicMode string) Result {
+	return graphSearchWithTrace(board, algorithm, heuristicMode, nil)
+}
+
+func graphSearchWithTrace(
+	board *parser.BoardConfig,
+	algorithm Algorithm,
+	heuristicMode string,
+	trace *[]searchtrace.Step,
+) Result {
 	startTime := time.Now()
 
-	start := graph.Node {
-		Row: board.StartCol,
-		Col: board.StartCol,
+	start := graph.Node{
+		Row:        board.StartRow,
+		Col:        board.StartCol,
 		NextTarget: 0,
 	}
 
 	startH := 0
-	if algorithm == AlgorithmGBFS || algorithm == AlgorithmAStar{
+	if algorithm == AlgorithmGBFS || algorithm == AlgorithmAStar {
 		startH = Heuristic(board, start, heuristicMode)
 	}
 
 	startNode := &SearchNode{
-		Node: start,
-		Parent: nil,
-		GCost: 0,
-		HCost: startH,
+		Node:     start,
+		Parent:   nil,
+		GCost:    0,
+		HCost:    startH,
 		Priority: calculatePriority(algorithm, 0, startH),
 		StepPath: nil,
 	}
@@ -96,22 +106,43 @@ func graphSearch(board *parser.BoardConfig, algorithm Algorithm, heuristicMode s
 		}
 
 		edges := graph.GetSuccessors(board, current.Node)
+		var traceStep *searchtrace.Step
+		if trace != nil {
+			traceStep = &searchtrace.Step{
+				Expanded: searchtrace.Node{
+					State:    current.Node,
+					GCost:    current.GCost,
+					HCost:    current.HCost,
+					Priority: current.Priority,
+				},
+			}
+		}
 
 		for _, edge := range edges {
 			nextNode := edge.State
 			newGCost := current.GCost + edge.Cost
-
-			oldGCost, visited := bestCost[nextNode]
-			if visited && newGCost >= oldGCost {
-				continue
-			}
-
-			bestCost[nextNode] = newGCost
-
 			hCost := 0
 			if algorithm == AlgorithmGBFS || algorithm == AlgorithmAStar {
 				hCost = Heuristic(board, nextNode, heuristicMode)
 			}
+			priority := calculatePriority(algorithm, newGCost, hCost)
+
+			oldGCost, visited := bestCost[nextNode]
+			if visited && newGCost >= oldGCost {
+				appendTraceEdge(traceStep, searchtrace.Edge{
+					From:      current.Node,
+					To:        nextNode,
+					Direction: edge.Direction,
+					StepCost:  edge.Cost,
+					GCost:     newGCost,
+					HCost:     hCost,
+					Priority:  priority,
+					Accepted:  false,
+				})
+				continue
+			}
+
+			bestCost[nextNode] = newGCost
 
 			searchNode := &SearchNode{
 				Node:     nextNode,
@@ -119,11 +150,24 @@ func graphSearch(board *parser.BoardConfig, algorithm Algorithm, heuristicMode s
 				Move:     edge.Direction,
 				GCost:    newGCost,
 				HCost:    hCost,
-				Priority: calculatePriority(algorithm, newGCost, hCost),
+				Priority: priority,
 				StepPath: edge.Path,
 			}
 
+			appendTraceEdge(traceStep, searchtrace.Edge{
+				From:      current.Node,
+				To:        nextNode,
+				Direction: edge.Direction,
+				StepCost:  edge.Cost,
+				GCost:     newGCost,
+				HCost:     hCost,
+				Priority:  priority,
+				Accepted:  true,
+			})
 			heap.Push(agenda, searchNode)
+		}
+		if traceStep != nil {
+			*trace = append(*trace, *traceStep)
 		}
 	}
 
@@ -131,6 +175,12 @@ func graphSearch(board *parser.BoardConfig, algorithm Algorithm, heuristicMode s
 		Found:       false,
 		Iterations:  iterations,
 		ExecutionMs: time.Since(startTime).Milliseconds(),
+	}
+}
+
+func appendTraceEdge(step *searchtrace.Step, edge searchtrace.Edge) {
+	if step != nil {
+		step.Edges = append(step.Edges, edge)
 	}
 }
 
@@ -195,4 +245,3 @@ func reverseStepPaths(paths [][]graph.Pos) {
 		paths[i], paths[j] = paths[j], paths[i]
 	}
 }
-
