@@ -1,6 +1,6 @@
 package searchtrace
 
-import "tucil3/graph"
+import "tucil3/game"
 
 // Step mencatat satu ekspansi node untuk kebutuhan visualisasi pencarian.
 type Step struct {

@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"tucil3/graph"
+	"tucil3/game"
 	"tucil3/parser"
 	"tucil3/searchtrace"
 	"tucil3/solver"

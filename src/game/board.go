@@ -149,6 +149,9 @@ func CopyGrid(grid [][]rune) [][]rune {
 func ApplyStateToGrid(board *parser.BoardConfig, s Node) [][]rune {
 	g := CopyGrid(board.Grid)
 
+	// Hapus posisi start asli agar visualisasi hanya menampilkan satu Z.
+	g[board.StartRow][board.StartCol] = '*'
+
 	// Tandai checkpoint yang sudah dilewati sebagai tile biasa
 	for i := range s.NextTarget {
 		pos, valid := board.CheckpointPos[i]
