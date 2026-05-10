@@ -11,12 +11,23 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
+# LaTeX build artifacts
+*.aux
+*.log
+*.maf
+*.mtc
+*.mtc0
+*.toc
+*.synctex.gz
+arara.log
+
 # Dependency directories (rarely committed, but often ignored)
 vendor/
 
 # Common build directories
-bin/
 dist/
 
 # Development environment files
 .env
+
+node_modules/
