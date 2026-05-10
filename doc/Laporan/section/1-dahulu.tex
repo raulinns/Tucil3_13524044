@@ -1,0 +1,176 @@
+\section{Deskripsi Penugasan}\label{sec:Pendahuluan}
+
+Ice Sliding Puzzle adalah permainan pencarian lintasan pada papan dua
+dimensi. Pemain berada pada suatu petak awal dan harus mencapai petak
+tujuan. Setiap kali pemain memilih arah gerak, pemain akan terus
+meluncur pada arah tersebut sampai bertemu penghalang. Selama
+meluncur, pemain dapat melewati beberapa jenis petak, seperti petak
+biasa, checkpoint, lava, dan dinding. Jika pemain keluar papan atau
+melewati lava, langkah tersebut dianggap tidak valid.
+
+Tugas kecil ini meminta dibuatnya program yang dapat menyelesaikan
+Ice Sliding Puzzle dengan pendekatan pencarian graf. Program menerima
+konfigurasi papan dari berkas teks, membangun ruang status permainan
+secara implisit, lalu mencari urutan gerakan yang membawa pemain dari
+posisi awal menuju tujuan. Jika terdapat checkpoint, checkpoint harus
+dilewati sesuai urutan sebelum permainan dianggap selesai.
+
+\section{Spesifikasi Tugas}\label{sec:Spesifikasi Tugas}
+
+\subsection{Spesifikasi Wajib}\label{sub:Spesifikasi Wajib}
+
+Program wajib memenuhi kebutuhan berikut.
+\begin{itemize}[label=\textbullet]
+    \item Membaca masukan papan dari berkas \texttt{.txt}.
+    \item Memvalidasi format papan, posisi awal, posisi tujuan,
+        checkpoint, dan matriks biaya.
+    \item Menyelesaikan persoalan menggunakan algoritma wajib UCS,
+        GBFS, dan A*.
+    \item Menampilkan solusi berupa urutan gerakan, total biaya,
+        jumlah iterasi, waktu eksekusi, dan visualisasi langkah solusi.
+    \item Menyediakan penyimpanan hasil solusi ke berkas
+        \texttt{.txt}.
+    \item Menyediakan antarmuka CLI untuk menjalankan solver dari terminal.
+\end{itemize}
+
+Format umum berkas masukan adalah sebagai berikut.
+\begin{tcolorbox}[colback=white, colframe=black, sharp corners, boxrule=0.5pt]
+\begin{verbatim}
+N M
+<N baris grid>
+<N x M nilai cost>
+\end{verbatim}
+\end{tcolorbox}
+
+Karakter pada grid memiliki arti sebagai berikut.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|L{9cm}|}
+        \hline
+        \textbf{Karakter} & \textbf{Keterangan} \\
+        \hline
+        \texttt{X} & Dinding. Pemain berhenti sebelum memasuki petak ini. \\
+        \hline
+        \texttt{*} & Petak biasa atau ice tile. \\
+        \hline
+        \texttt{L} & Lava. Langkah yang melewati petak ini tidak valid. \\
+        \hline
+        \texttt{Z} & Posisi awal pemain. \\
+        \hline
+        \texttt{O} & Posisi tujuan. \\
+        \hline
+        \texttt{0}--\texttt{9} & Checkpoint yang harus dilewati berurutan. \\
+        \hline
+    \end{tabular}
+    \caption{Daftar karakter pada papan}
+\end{table}
+
+\subsection{Spesifikasi Bonus}\label{sub:Spesifikasi Bonus}
+
+Pada implementasi ini juga dibuat beberapa fitur bonus. Pertama, GUI
+web dibuat agar pengguna dapat mengunggah testcase, memilih algoritma,
+memilih heuristic untuk GBFS dan A*, melihat animasi solusi per
+langkah, serta melihat trace graf pencarian yang terbentuk selama
+solver berjalan. GUI juga menyediakan tombol untuk menyimpan hasil
+solusi ke berkas \texttt{.txt}. Kedua, program menambahkan algoritma pathfinding
+alternatif BFS dan DFS. Ketiga, selain heuristic utama, program
+menyediakan beberapa alternatif heuristic untuk GBFS dan A*.
+
+\section{Dasar Teori}\label{sec:Dasar Teori}
+
+\subsection{Representasi Graf}\label{sub:Representasi Graf}
+
+Persoalan Ice Sliding Puzzle dapat dipandang sebagai persoalan
+pencarian lintasan pada graf berbobot. Setiap simpul menyatakan suatu
+status permainan, yaitu posisi pemain dan checkpoint berikutnya yang
+harus dicapai. Setiap sisi menyatakan satu aksi slide ke salah satu
+arah. Bobot sisi adalah total biaya petak yang dilewati selama slide
+tersebut.
+
+Graf tidak perlu dibangun seluruhnya sejak awal. Program cukup
+membangkitkan tetangga dari simpul yang sedang diekspansi. Pendekatan
+ini disebut pembangkitan graf implisit dan cocok untuk ruang status
+yang dapat membesar secara cepat.
+
+\subsection{Uniform Cost Search}\label{sub:UCS}
+
+Uniform Cost Search (UCS) adalah algoritma pencarian yang selalu
+mengekspansi simpul dengan biaya lintasan terkecil dari simpul awal.
+Jika semua biaya sisi tidak negatif, UCS menjamin solusi optimal
+berdasarkan total biaya. Prioritas simpul pada UCS didefinisikan
+sebagai berikut.
+\[
+    f(n) = g(n)
+\]
+dengan $g(n)$ adalah biaya lintasan dari simpul awal menuju simpul
+$n$.
+
+\subsection{Greedy Best First Search}\label{sub:GBFS}
+
+Greedy Best First Search (GBFS) memilih simpul berdasarkan nilai
+heuristic yang memperkirakan jarak menuju target. Algoritma ini
+cenderung cepat menuju daerah yang dianggap menjanjikan, tetapi tidak
+menjamin solusi optimal karena biaya lintasan yang sudah ditempuh
+tidak menjadi bagian dari prioritas utama. Prioritas GBFS adalah:
+\[
+    f(n) = h(n)
+\]
+
+\subsection{A*}\label{sub:AStar}
+
+A* menggabungkan biaya aktual yang sudah ditempuh dengan estimasi
+biaya menuju target. Prioritas simpul pada A* adalah:
+\[
+    f(n) = g(n) + h(n)
+\]
+Jika heuristic yang digunakan admissible dan konsisten, A* dapat
+menemukan solusi optimal dengan jumlah ekspansi yang umumnya lebih
+sedikit dibanding UCS.
+
+\subsection{Breadth First Search}\label{sub:BFS}
+
+Breadth First Search (BFS) adalah algoritma pencarian tidak berbobot
+yang mengekspansi simpul berdasarkan kedalaman. Pada implementasi ini,
+setiap aksi slide dianggap sebagai satu langkah, sehingga BFS optimal
+terhadap jumlah slide, bukan terhadap total cost traversal.
+\[
+    f(n) = depth(n)
+\]
+
+\subsection{Depth First Search}\label{sub:DFS}
+
+Depth First Search (DFS) menggunakan stack untuk menelusuri cabang
+sedalam mungkin sebelum mencoba cabang lain. DFS dapat menemukan
+solusi pada ruang status finite, tetapi tidak menjamin solusi dengan
+jumlah slide paling sedikit maupun cost paling kecil.
+
+\subsection{Heuristic}\label{sub:Heuristic}
+
+Program menyediakan tiga mode heuristic.
+\begin{enumerate}
+    \item \texttt{H1}: heuristic utama berupa jarak Manhattan dari
+        posisi sekarang ke target berikutnya.
+    \item \texttt{H2}: alternatif heuristic berupa jarak Manhattan ke
+        target berikutnya dikalikan biaya petak minimum yang dapat dilewati.
+    \item \texttt{H3}: alternatif heuristic berupa total jarak
+        Manhattan menuju checkpoint yang
+        tersisa secara berurutan, lalu menuju goal.
+\end{enumerate}
+
+Pada permainan slide, jarak Manhattan bukan jarak langkah sebenarnya
+karena satu gerakan dapat melewati beberapa petak. Namun, heuristic
+ini tetap berguna sebagai estimasi arah pencarian yang sederhana dan
+murah dihitung.
+
+Untuk A*, admissibility heuristic pada permainan ini tidak selalu
+dapat dijamin secara umum. Satu aksi slide dapat melewati beberapa
+petak sekaligus, sehingga jarak Manhattan dalam satuan petak dapat
+lebih besar daripada biaya aksi minimum jika terdapat tile berbiaya
+rendah atau jika satu slide mendekatkan posisi melewati banyak petak.
+\texttt{H1} dan \texttt{H2} tetap dipakai karena murah dihitung dan
+memberi arah pencarian yang baik, tetapi optimalitas A* secara teoritis
+hanya terjamin pada testcase ketika nilai heuristic tidak melebihi
+biaya sisa sebenarnya. \texttt{H3} lebih informatif untuk checkpoint
+berurutan karena menjumlahkan estimasi ke target-target yang tersisa,
+namun juga tidak dijamin admissible pada seluruh konfigurasi papan
+karena tidak memodelkan titik berhenti akibat dinding dan efek slide.

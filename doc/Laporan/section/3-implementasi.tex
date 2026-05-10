@@ -1,0 +1,229 @@
+\section{Implementasi Spesifikasi Wajib}\label{sec:Implementasi Spesifikasi Wajib}
+
+\subsection{Parser dan Validasi Input}\label{sub:Parser dan Validasi Input}
+
+Parser berada pada package \texttt{parser}. Fungsi utama parser adalah
+\texttt{ParseFile}. Fungsi ini menerima path berkas \texttt{.txt},
+membaca seluruh isi file, lalu membentuk \texttt{BoardConfig}. Validasi
+yang dilakukan meliputi:
+\begin{itemize}[label=\textbullet]
+    \item ekstensi file harus \texttt{.txt};
+    \item baris pertama harus berisi tepat dua bilangan bulat positif
+        \texttt{N M};
+    \item jumlah baris grid harus sesuai dengan \texttt{N};
+    \item setiap baris grid harus memiliki panjang \texttt{M};
+    \item papan harus memiliki tepat satu start \texttt{Z} dan satu
+        goal \texttt{O};
+    \item checkpoint tidak boleh duplikat dan harus berurutan mulai
+        dari \texttt{0};
+    \item jumlah nilai cost harus tepat \texttt{N * M};
+    \item setiap nilai cost harus berupa bilangan bulat tidak negatif.
+\end{itemize}
+
+Dengan validasi tersebut, solver dapat berasumsi bahwa struktur papan
+yang diterima sudah konsisten.
+
+\subsection{Pembangkitan Successor}\label{sub:Pembangkitan Successor}
+
+Package \texttt{game} berisi aturan permainan. Fungsi
+\texttt{GetSuccessors} membangkitkan semua langkah valid dari suatu
+state dengan mencoba empat arah: atas, bawah, kiri, dan kanan.
+
+\begin{lstlisting}[language=Go, basicstyle=\ttfamily\small, breaklines=true]
+func GetSuccessors(board *parser.BoardConfig, s Node) []Edge {
+    var successors []Edge
+    for _, dir := range AllDirs {
+        newState, cost, path, valid := Slide(board, s, dir)
+        if valid {
+            successors = append(successors, Edge{
+                State:     newState,
+                Cost:      cost,
+                Direction: dir,
+                Path:      path,
+            })
+        }
+    }
+    return successors
+}
+\end{lstlisting}
+
+Fungsi \texttt{Slide} merupakan inti aturan permainan. Selama pemain
+belum bertemu dinding, fungsi ini terus memindahkan posisi ke petak
+berikutnya, menjumlahkan biaya, dan mencatat path petak yang dilewati.
+Jika gerakan keluar papan atau melewati lava, gerakan langsung
+ditolak. Jika bertemu checkpoint, checkpoint hanya diterima apabila
+checkpoint tersebut merupakan target berikutnya atau checkpoint yang
+sudah dilewati sebelumnya.
+
+\subsection{Kerangka Pencarian}\label{sub:Kerangka Pencarian}
+
+Solver menggunakan struktur \texttt{SearchNode} untuk menyimpan state
+permainan dan informasi pencarian.
+
+\begin{lstlisting}[language=Go, basicstyle=\ttfamily\small, breaklines=true]
+type SearchNode struct {
+    Node     graph.Node
+    Parent   *SearchNode
+    Move     graph.Dir
+    GCost    int
+    HCost    int
+    Priority int
+    StepPath []graph.Pos
+    Index    int
+}
+\end{lstlisting}
+
+Field \texttt{Parent}, \texttt{Move}, dan \texttt{StepPath} digunakan
+untuk merekonstruksi solusi setelah goal ditemukan. Field
+\texttt{GCost}, \texttt{HCost}, dan \texttt{Priority} digunakan oleh
+priority queue.
+
+Secara garis besar, algoritma pencarian berjalan sebagai berikut.
+\begin{enumerate}
+    \item Buat state awal dari posisi \texttt{Z} dengan
+        \texttt{NextTarget = 0}.
+    \item Masukkan state awal ke priority queue.
+    \item Selama priority queue tidak kosong, ambil simpul dengan
+        prioritas terkecil.
+    \item Abaikan simpul jika sudah ada rute yang lebih murah menuju
+        state yang sama.
+    \item Jika simpul adalah goal, rekonstruksi path dan kembalikan
+        hasil.
+    \item Jika belum goal, bangkitkan semua successor valid.
+    \item Untuk setiap successor, hitung biaya baru, heuristic, dan
+        prioritas sesuai algoritma yang dipilih.
+    \item Masukkan successor ke priority queue apabila rute tersebut
+        lebih baik daripada rute sebelumnya.
+\end{enumerate}
+
+\subsection{Implementasi UCS, GBFS, dan A*}\label{sub:Implementasi Algoritma}
+
+Tiga algoritma wajib diimplementasikan sebagai wrapper terhadap
+\texttt{graphSearch}. Wrapper menjaga antarmuka pemanggilan tetap
+sederhana.
+
+\begin{lstlisting}[language=Go, basicstyle=\ttfamily\small, breaklines=true]
+func UCS(board *parser.BoardConfig) Result {
+    return graphSearch(board, AlgorithmUCS, "")
+}
+
+func GBFS(board *parser.BoardConfig, heuristicMode string) Result {
+    return graphSearch(board, AlgorithmGBFS, heuristicMode)
+}
+
+func AStar(board *parser.BoardConfig, heuristicMode string) Result {
+    return graphSearch(board, AlgorithmAStar, heuristicMode)
+}
+\end{lstlisting}
+
+Perhitungan prioritas dilakukan pada satu fungsi agar perilaku ketiga
+algoritma mudah dibandingkan.
+
+\begin{lstlisting}[language=Go, basicstyle=\ttfamily\small, breaklines=true]
+func calculatePriority(algorithm Algorithm, gCost, hCost int) int {
+    switch algorithm {
+    case AlgorithmUCS:
+        return gCost
+    case AlgorithmGBFS:
+        return hCost
+    case AlgorithmAStar:
+        return gCost + hCost
+    default:
+        return gCost
+    }
+}
+\end{lstlisting}
+
+\subsection{Implementasi BFS dan DFS}\label{sub:Implementasi BFS DFS}
+
+BFS dan DFS diimplementasikan sebagai algoritma bonus pada fungsi
+\texttt{unweightedGraphSearch}. Fungsi ini menggunakan representasi
+state dan successor yang sama dengan algoritma wajib, tetapi tidak
+menggunakan priority queue. BFS mengambil elemen dari depan slice
+seperti queue, sedangkan DFS mengambil elemen terakhir seperti stack.
+
+\begin{lstlisting}[language=Go, basicstyle=\ttfamily\small, breaklines=true]
+func BFS(board *parser.BoardConfig) Result {
+    return unweightedGraphSearch(board, AlgorithmBFS, nil)
+}
+
+func DFS(board *parser.BoardConfig) Result {
+    return unweightedGraphSearch(board, AlgorithmDFS, nil)
+}
+\end{lstlisting}
+
+Pada BFS, kedalaman simpul menyatakan jumlah slide yang telah
+dilakukan. Oleh karena itu, BFS optimal terhadap jumlah slide. Namun,
+karena cost setiap slide bergantung pada total cost tile yang dilewati,
+BFS tidak selalu menghasilkan total cost terkecil. DFS digunakan
+sebagai pembanding karena dapat menemukan solusi dengan strategi
+penelusuran yang berbeda, tetapi tidak menjamin optimalitas.
+
+\subsection{Heuristic}\label{sub:Implementasi Heuristic}
+
+Heuristic digunakan oleh GBFS dan A*. Program menyediakan tiga pilihan.
+\begin{enumerate}
+    \item \texttt{H1}: Manhattan normal ke target berikutnya.
+    \item \texttt{H2}: alternatif heuristic Manhattan ke target
+        berikutnya dikali biaya minimum tile yang dapat dilewati.
+    \item \texttt{H3}: alternatif heuristic total Manhattan dari
+        posisi saat ini menuju semua checkpoint tersisa secara
+        berurutan, lalu menuju goal.
+\end{enumerate}
+
+\begin{lstlisting}[language=Go, basicstyle=\ttfamily\small, breaklines=true]
+func Heuristic(board *parser.BoardConfig, node graph.Node, mode string) int {
+    switch mode {
+    case HeuristicManhattan:
+        return manhattanToNextTarget(board, node)
+    case HeuristicManhattanCost:
+        return manhattanToNextTarget(board, node) * minTraversableCost(board)
+    case HeuristicRemaining:
+        return remainingManhattan(board, node)
+    default:
+        return manhattanToNextTarget(board, node) * minTraversableCost(board)
+    }
+}
+\end{lstlisting}
+
+\subsection{Rekonstruksi Solusi}\label{sub:Rekonstruksi Solusi}
+
+Ketika goal ditemukan, solver tidak langsung memiliki urutan gerakan
+dari awal ke akhir. Setiap \texttt{SearchNode} hanya menyimpan parent.
+Oleh karena itu, program melakukan traversal mundur dari goal ke start,
+menyimpan simpul dan gerakan yang dilewati, lalu membalik urutan hasil.
+
+Hasil akhir disimpan dalam struktur \texttt{Result}.
+\begin{lstlisting}[language=Go, basicstyle=\ttfamily\small, breaklines=true]
+type Result struct {
+    Found       bool
+    Moves       []graph.Dir
+    PathNodes   []graph.Node
+    StepPaths   [][]graph.Pos
+    TotalCost   int
+    Iterations  int
+    ExecutionMs int64
+}
+\end{lstlisting}
+
+\subsection{CLI}\label{sub:CLI}
+
+CLI berada pada \texttt{src/main.go}. Program meminta pengguna
+memasukkan path file testcase, pilihan algoritma, dan pilihan
+heuristic jika algoritma yang dipilih adalah GBFS atau A*. Setelah
+solver selesai, CLI menampilkan status solusi, urutan gerakan, total
+cost, jumlah iterasi, waktu eksekusi, dan visualisasi papan untuk
+setiap langkah solusi.
+
+\subsection{Penyimpanan Solusi}\label{sub:Penyimpanan Solusi}
+
+Setelah hasil pencarian ditampilkan, CLI menanyakan apakah pengguna
+ingin menyimpan hasil ke berkas \texttt{.txt}. Jika pengguna memilih
+ya, program meminta path output. Ekstensi \texttt{.txt} ditambahkan
+secara otomatis apabila pengguna belum menuliskannya.
+
+Berkas solusi yang disimpan berisi ringkasan algoritma, heuristic
+jika digunakan, status solusi, urutan gerakan, total cost, jumlah
+iterasi, waktu eksekusi, dan visualisasi papan untuk setiap langkah.
+Jika solusi tidak ditemukan, program tetap dapat menyimpan status
+\textit{not found}, jumlah iterasi, waktu eksekusi, dan papan awal.

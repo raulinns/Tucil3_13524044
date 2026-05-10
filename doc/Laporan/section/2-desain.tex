@@ -1,0 +1,185 @@
+\section{Desain}\label{sec:Desain}
+
+\subsection{Tech Stack}\label{sub:Tech Stack}
+
+Aplikasi dirancang menggunakan Go untuk bagian parser, model puzzle,
+dan solver. Untuk bonus GUI, aplikasi menggunakan backend HTTP Go dan
+frontend React berbasis Vite.
+
+\begin{enumerate}
+    \item Bahasa pemrograman solver: Go 1.26.2.
+    \item Backend GUI: Go HTTP server.
+    \item Frontend GUI: React dan Vite.
+    \item Kontainerisasi: Docker multi-stage build.
+\end{enumerate}
+
+\subsection{Struktur Program}\label{sub:Struktur Program}
+
+Struktur utama repository adalah sebagai berikut.
+\begin{enumerate}
+    \item \texttt{src/main.go}: entry point CLI.
+    \item \texttt{src/parser/}: parser dan validasi berkas input.
+    \item \texttt{src/game/}: representasi state permainan, aturan
+        slide, dan pembangkitan successor.
+    \item \texttt{src/solver/}: implementasi UCS, GBFS, A*, BFS, DFS,
+        priority queue, dan heuristic.
+    \item \texttt{src/searchtrace/}: struktur data trace pencarian
+        untuk kebutuhan visualisasi GUI.
+    \item \texttt{src/web/backend/}: backend HTTP untuk menerima file
+        input dan menjalankan solver.
+    \item \texttt{src/web/frontend/}: antarmuka React untuk upload
+        testcase, kontrol solver, playback solusi, dan graf pencarian.
+    \item \texttt{test/}: tempat penyimpanan testcase.
+    \item \texttt{doc/}: spesifikasi dan laporan.
+\end{enumerate}
+
+\subsection{Representasi Data}\label{sub:Representasi Data}
+
+Konfigurasi papan direpresentasikan oleh struktur \texttt{BoardConfig}.
+Struktur ini menyimpan ukuran papan, grid karakter, matriks biaya,
+posisi awal, posisi tujuan, dan posisi checkpoint.
+
+\begin{lstlisting}[language=Go, basicstyle=\ttfamily\small, breaklines=true]
+type BoardConfig struct {
+    N, M           int
+    Grid           [][]rune
+    Cost           [][]int
+    StartRow       int
+    StartCol       int
+    GoalRow        int
+    GoalCol        int
+    NumCheckpoints int
+    CheckpointPos  map[int][2]int
+}
+\end{lstlisting}
+
+Status pencarian direpresentasikan oleh \texttt{game.Node}. Selain
+posisi pemain, state juga menyimpan checkpoint berikutnya yang harus
+dicapai. Dengan demikian, posisi yang sama dapat menjadi state yang
+berbeda jika progres checkpoint-nya berbeda.
+
+\begin{lstlisting}[language=Go, basicstyle=\ttfamily\small, breaklines=true]
+type Node struct {
+    Row, Col   int
+    NextTarget int
+}
+\end{lstlisting}
+
+\subsection{Model Gerakan}\label{sub:Model Gerakan}
+
+Gerakan pada puzzle tidak berpindah satu petak, melainkan slide
+sampai petak berikutnya adalah dinding. Fungsi slide memeriksa arah
+gerak, menambahkan biaya petak yang dilewati, memperbarui checkpoint,
+dan menolak langkah yang keluar papan, melewati lava, atau melewati
+checkpoint yang belum boleh dilewati.
+
+Setiap successor yang valid direpresentasikan sebagai \texttt{Edge}.
+\begin{lstlisting}[language=Go, basicstyle=\ttfamily\small, breaklines=true]
+type Edge struct {
+    State     Node
+    Cost      int
+    Direction Dir
+    Path      []Pos
+}
+\end{lstlisting}
+
+\subsection{Desain Solver}\label{sub:Desain Solver}
+
+Solver menggunakan satu kerangka pencarian umum, yaitu
+\texttt{graphSearch}. Perbedaan UCS, GBFS, dan A* hanya terletak pada
+cara menghitung prioritas simpul.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|}
+        \hline
+        \textbf{Algoritma} & \textbf{Prioritas} \\
+        \hline
+        UCS & $g(n)$ \\
+        \hline
+        GBFS & $h(n)$ \\
+        \hline
+        A* & $g(n) + h(n)$ \\
+        \hline
+    \end{tabular}
+    \caption{Fungsi prioritas pada solver}
+\end{table}
+
+Frontier disimpan dalam priority queue. Program juga menyimpan
+\texttt{bestCost} untuk setiap state agar state yang pernah dicapai
+dengan biaya lebih murah tidak diproses ulang menggunakan biaya yang
+lebih mahal.
+
+\subsection{Desain BFS dan DFS}\label{sub:Desain BFS DFS}
+
+BFS dan DFS diimplementasikan dengan kerangka pencarian tidak berbobot.
+Keduanya tetap memakai fungsi \texttt{GetSuccessors} yang sama dengan
+UCS, GBFS, dan A*. Perbedaannya terletak pada struktur frontier.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|L{7cm}|}
+        \hline
+        \textbf{Algoritma} & \textbf{Frontier} & \textbf{Karakteristik} \\
+        \hline
+        BFS & Queue & Menemukan solusi dengan jumlah slide minimum, tetapi tidak menjamin total cost minimum. \\
+        \hline
+        DFS & Stack & Menelusuri cabang sedalam mungkin dan tidak menjamin optimalitas. \\
+        \hline
+    \end{tabular}
+    \caption{Desain frontier BFS dan DFS}
+\end{table}
+
+Pada BFS dan DFS, state yang sudah pernah dikunjungi tidak dimasukkan
+kembali ke frontier untuk mencegah siklus. Total cost tetap dihitung
+sepanjang lintasan yang ditemukan agar hasilnya dapat dibandingkan
+dengan algoritma berbobot.
+
+\subsection{Cara Kompilasi dan Menjalankan Program}\label{sec:Cara Kompilasi dan Menjalankan Program}
+
+Program membutuhkan Go untuk menjalankan CLI dan backend. Frontend
+GUI membutuhkan Node.js dan npm jika dijalankan tanpa Docker. Semua
+perintah berikut dijalankan dari root repository.
+
+\noindent Untuk melakukan kompilasi executable:
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, breaklines=true]
+go build -o bin/ice-sliding-solver ./src
+\end{lstlisting}
+
+\noindent Untuk menjalankan hasil kompilasi:
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, breaklines=true]
+./bin/ice-sliding-solver
+\end{lstlisting}
+
+\noindent Untuk menjalankan CLI:
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, breaklines=true]
+go run ./src
+\end{lstlisting}
+
+Setelah solver selesai, CLI menawarkan penyimpanan hasil ke berkas
+\texttt{.txt}. Berkas hasil berisi algoritma, heuristic jika ada,
+status solusi, urutan gerakan, total cost, jumlah iterasi, waktu
+eksekusi, dan visualisasi papan per langkah.
+
+\noindent Untuk menjalankan backend GUI tanpa Docker:
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, breaklines=true]
+go run ./src/web/backend
+\end{lstlisting}
+
+\noindent Untuk menjalankan frontend GUI tanpa Docker:
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, breaklines=true]
+cd src/web/frontend
+npm install
+npm run dev
+\end{lstlisting}
+
+\noindent Untuk menjalankan GUI menggunakan Docker:
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, breaklines=true]
+docker compose down
+docker compose up --build
+\end{lstlisting}
+
+\noindent GUI dapat diakses melalui alamat berikut.
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, breaklines=true]
+http://localhost:8080
+\end{lstlisting}

@@ -1,0 +1,124 @@
+\section{Implementasi Spesifikasi Bonus}\label{sub:Implementasi Spesifikasi Bonus}
+
+\subsection{Algoritma Pathfinding Alternatif}\label{sub:Algoritma Pathfinding Alternatif}
+
+Bonus algoritma pathfinding alternatif dipenuhi dengan menambahkan BFS
+dan DFS. Keduanya dapat dijalankan dari CLI maupun GUI. Pada GUI,
+frontend mengirim nilai \texttt{BFS} atau \texttt{DFS} melalui field
+\texttt{algorithm}, lalu backend memanggil \texttt{BFSWithTrace} atau
+\texttt{DFSWithTrace}.
+
+\begin{lstlisting}[language=Go, basicstyle=\ttfamily\small, breaklines=true]
+case "BFS":
+    result, trace := solver.BFSWithTrace(board)
+    return result, trace, nil
+case "DFS":
+    result, trace := solver.DFSWithTrace(board)
+    return result, trace, nil
+\end{lstlisting}
+
+Kedua algoritma ini tidak memerlukan heuristic, sehingga dropdown
+heuristic pada GUI hanya aktif untuk GBFS dan A*.
+
+\subsection{GUI Web}\label{sub:GUI}
+
+GUI dibuat sebagai aplikasi web agar solver dapat digunakan tanpa
+interaksi terminal. Arsitektur GUI terdiri dari dua bagian.
+\begin{enumerate}
+    \item Backend Go pada \texttt{src/web/backend/server.go}.
+    \item Frontend React pada \texttt{src/web/frontend}.
+\end{enumerate}
+
+Backend menyediakan endpoint \texttt{POST /solve}. Endpoint ini
+menerima \texttt{multipart/form-data} berisi file testcase, nama
+algoritma, dan mode heuristic. Setelah request diterima, backend
+menjalankan parser dan solver, lalu mengembalikan respons JSON.
+
+\begin{lstlisting}[language=bash, basicstyle=\ttfamily\small, breaklines=true]
+POST /solve
+file=<testcase.txt>
+algorithm=UCS|GBFS|ASTAR|BFS|DFS
+heuristic=H1|H2|H3
+\end{lstlisting}
+
+Respons backend berisi informasi berikut.
+\begin{itemize}[label=\textbullet]
+    \item \texttt{algorithm}: algoritma yang dijalankan.
+    \item \texttt{heuristic}: heuristic yang dipakai untuk GBFS atau A*.
+    \item \texttt{found}: status apakah solusi ditemukan.
+    \item \texttt{moves}: urutan gerakan solusi.
+    \item \texttt{totalCost}: total biaya solusi.
+    \item \texttt{iterations}: jumlah simpul yang diekspansi.
+    \item \texttt{executionMs}: waktu eksekusi solver dalam milidetik.
+    \item \texttt{steps}: papan visual untuk setiap langkah solusi.
+    \item \texttt{trace}: node dan edge untuk visualisasi graf pencarian.
+\end{itemize}
+
+\subsection{Frontend React}\label{sub:Frontend React}
+
+Frontend menyediakan beberapa komponen utama.
+\begin{enumerate}
+    \item \texttt{ControlPanel.jsx}: form upload file, pilihan
+        algoritma, dan pilihan heuristic.
+    \item \texttt{Board.jsx}: visualisasi grid puzzle.
+    \item \texttt{ResultPanel.jsx}: ringkasan hasil solver.
+    \item \texttt{PlaybackControls.jsx}: kontrol previous, next,
+        play/pause, slider step, dan speed.
+    \item \texttt{GraphView.jsx}: visualisasi trace pencarian dalam
+        bentuk graf.
+\end{enumerate}
+
+Alur penggunaan GUI adalah sebagai berikut.
+\begin{enumerate}
+    \item Pengguna mengunggah file testcase \texttt{.txt}.
+    \item Pengguna memilih algoritma UCS, GBFS, A*, BFS, atau DFS.
+    \item Jika memilih GBFS atau A*, pengguna memilih heuristic.
+    \item Frontend mengirim request ke endpoint \texttt{/solve}.
+    \item Backend mengembalikan hasil solver.
+    \item Frontend menampilkan hasil, playback solusi, graf
+        pencarian, dan tombol \texttt{Save .txt} untuk menyimpan
+        ringkasan solusi.
+\end{enumerate}
+
+\subsection{Trace Graf Pencarian}\label{sub:Trace Graf Pencarian}
+
+Untuk kebutuhan GUI, solver memiliki varian fungsi \texttt{WithTrace}.
+Trace tidak dimasukkan ke dalam \texttt{solver.Result} agar struktur
+hasil utama tetap fokus pada solusi pencarian. Data trace diletakkan
+pada package terpisah, yaitu \texttt{searchtrace}.
+
+\begin{lstlisting}[language=Go, basicstyle=\ttfamily\small, breaklines=true]
+type Step struct {
+    Expanded Node
+    Edges    []Edge
+}
+\end{lstlisting}
+
+Setiap \texttt{Step} merepresentasikan satu ekspansi simpul. Edge pada
+trace menyimpan informasi arah, biaya langkah, nilai \texttt{g},
+nilai \texttt{h}, prioritas, dan apakah edge tersebut diterima masuk
+frontier. Dengan informasi ini, GUI dapat membedakan successor yang
+dipakai solver dan successor yang ditolak karena sudah ada rute lebih
+murah.
+
+\subsection{Alternatif Heuristic}\label{sub:Alternatif Heuristic}
+
+Bonus alternatif heuristic dipenuhi dengan menyediakan \texttt{H2} dan
+\texttt{H3} selain heuristic utama \texttt{H1}. Ketiga heuristic dapat
+dipilih pada GUI ketika algoritma yang digunakan adalah GBFS atau A*.
+
+\subsection{Docker}\label{sub:Docker}
+
+Dockerfile menggunakan multi-stage build.
+\begin{enumerate}
+    \item Stage Node membangun frontend React.
+    \item Stage Go membangun binary backend.
+    \item Stage Alpine menjalankan backend dan menyajikan hasil build
+        frontend sebagai static SPA.
+\end{enumerate}
+
+Konfigurasi \texttt{docker-compose.yml} di root repository mengatur
+build image dari \texttt{src/Dockerfile} dan memetakan port
+\texttt{8080}. Dengan desain ini, pengguna cukup menjalankan
+\texttt{docker compose down} lalu \texttt{docker compose up --build}
+untuk mengakses GUI lengkap melalui browser.

@@ -1,0 +1,98 @@
+\section{Penutup}
+
+\subsection{Kesimpulan}\label{sub:Kesimpulan}
+
+Berdasarkan rancangan dan implementasi yang telah dibuat, persoalan
+Ice Sliding Puzzle dapat dimodelkan sebagai pencarian lintasan pada
+graf berbobot. State permainan tidak hanya berisi posisi pemain,
+tetapi juga progres checkpoint. Dengan representasi tersebut, aturan
+checkpoint berurutan dapat ditangani secara alami oleh algoritma
+pencarian.
+
+UCS digunakan sebagai algoritma pencarian berbasis biaya aktual dan
+menjadi acuan untuk solusi optimal jika seluruh biaya sisi tidak
+negatif. GBFS menggunakan heuristic sebagai prioritas sehingga dapat
+lebih cepat mengarah ke target, tetapi tidak menjamin optimalitas.
+A* menggabungkan biaya aktual dan estimasi heuristic sehingga menjadi
+kompromi antara optimalitas dan efisiensi pencarian. BFS dan DFS
+ditambahkan sebagai algoritma bonus. BFS optimal terhadap jumlah slide,
+sedangkan DFS berfungsi sebagai pembanding strategi pencarian yang
+tidak menjamin optimalitas.
+
+Selain CLI, program juga menyediakan GUI web. GUI membantu pengguna
+mengunggah testcase, memilih algoritma, melihat hasil solusi secara
+step-by-step, mengamati trace pencarian dalam bentuk graf, dan
+menyimpan ringkasan solusi ke berkas \texttt{.txt}.
+
+\subsection{Saran Pengembangan}\label{sub:Saran Pengembangan}
+
+Beberapa pengembangan yang dapat dilakukan selanjutnya adalah sebagai
+berikut.
+\begin{enumerate}
+    \item Menambahkan lebih banyak heuristic dan menganalisis
+        admissibility serta konsistensinya.
+    \item Mengoptimalkan visualisasi search graph agar tetap nyaman
+        digunakan pada testcase besar.
+    \item Menambahkan pengujian otomatis untuk parser, aturan slide,
+        dan solver.
+    \item Menambahkan build executable lintas sistem operasi agar
+        folder \texttt{bin/} dapat langsung berisi executable untuk
+        Windows dan Linux.
+\end{enumerate}
+
+\subsection{Lampiran}\label{sub:Lampiran}
+
+Tautan kode sumber program:
+\begin{center}
+    \url{https://github.com/raulinns/Tucil3-13524044}
+\end{center}
+
+Rangkuman keterselesaian program adalah sebagai berikut.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|p{8cm}|c|c|}
+        \hline
+        \textbf{No} & \centering \textbf{Poin} & \textbf{Ya} &
+        \textbf{Tidak} \\ \hline
+        1 & Program dapat dikompilasi tanpa kesalahan & \checkmark & \\ \hline
+        2 & Program dapat dijalankan melalui CLI & \checkmark & \\ \hline
+        3 & Program dapat membaca masukan berkas \texttt{.txt} & \checkmark & \\ \hline
+        4 & Program mengimplementasikan UCS & \checkmark & \\ \hline
+        5 & Program mengimplementasikan GBFS & \checkmark & \\ \hline
+        6 & Program mengimplementasikan A* & \checkmark & \\ \hline
+        7 & Program mengimplementasikan BFS dan DFS sebagai algoritma bonus & \checkmark & \\ \hline
+        8 & Program memiliki alternatif heuristic H2 dan H3 & \checkmark & \\ \hline
+        9 & Program menampilkan urutan solusi, cost, iterasi, dan waktu eksekusi & \checkmark & \\ \hline
+        10 & Program memiliki GUI web & \checkmark & \\ \hline
+        11 & GUI menampilkan playback solusi & \checkmark & \\ \hline
+        12 & GUI menampilkan trace graf pencarian & \checkmark & \\ \hline
+        13 & Program menyimpan solusi ke berkas \texttt{.txt} & \checkmark & \\ \hline
+    \end{tabular}
+    \caption{Ringkasan keterselesaian program}
+\end{table}
+
+\subsection{Kata Penutup}\label{sub:Kata Penutup}
+
+Tugas kecil ini memberikan pengalaman dalam memodelkan permainan
+sebagai persoalan graf dan membandingkan karakteristik algoritma
+pencarian berbeda. Implementasi juga memperlihatkan bahwa desain
+representasi state sangat mempengaruhi kesederhanaan solver, terutama
+ketika terdapat aturan tambahan seperti checkpoint berurutan.
+
+\pagebreak
+\subsection{Pernyataan}\label{sub:Pernyataan}
+Tugas ini disusun sepenuhnya tanpa bantuan kecerdasan buatan (Generative AI), melainkan hasil pemikiran dan analisis mandiri.
+
+
+\raggedleft
+Bandung, \today
+
+\begin{figure}[H]
+    \raggedleft
+    \includegraphics[width=0.13\textwidth]{figures/ttd endra.jpg}
+    \hspace{1cm}
+\end{figure}
+
+\raggedleft
+Narendra Dharma Wistara M. \\
+13524044
