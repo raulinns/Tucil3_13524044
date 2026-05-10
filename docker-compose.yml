@@ -1,0 +1,8 @@
+services:
+  ice-sliding-solver:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    image: ice-sliding-solver:latest
+    ports:
+      - "8080:8080"

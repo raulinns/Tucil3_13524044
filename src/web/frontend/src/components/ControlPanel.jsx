@@ -4,8 +4,8 @@ const algorithms = [
   { value: "UCS", label: "UCS" },
   { value: "GBFS", label: "GBFS" },
   { value: "ASTAR", label: "A*" },
-  { value: "BFS", label: "BFS", disabled: true },
-  { value: "DFS", label: "DFS", disabled: true },
+  { value: "BFS", label: "BFS" },
+  { value: "DFS", label: "DFS" },
 ];
 
 const heuristics = [

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"tucil3/game"
+	graph "tucil3/game"
 	"tucil3/parser"
 	"tucil3/solver"
 )
@@ -37,6 +37,8 @@ func main() {
 	fmt.Println("1. UCS")
 	fmt.Println("2. GBFS")
 	fmt.Println("3. A*")
+	fmt.Println("4. BFS")
+	fmt.Println("5. DFS")
 	fmt.Print("Pilihan: ")
 
 	algorithmChoice, err := readLine(reader)
@@ -83,6 +85,14 @@ func main() {
 	case "3", "A*", "ASTAR":
 		algorithmName = "A*"
 		result = solver.AStar(board, heuristicChoice)
+
+	case "4", "BFS":
+		algorithmName = "BFS"
+		result = solver.BFS(board)
+
+	case "5", "DFS":
+		algorithmName = "DFS"
+		result = solver.DFS(board)
 
 	default:
 		fmt.Println("Pilihan algoritma tidak valid.")

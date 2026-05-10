@@ -4,7 +4,7 @@ import (
 	"container/heap"
 	"time"
 
-	"tucil3/game"
+	graph "tucil3/game"
 	"tucil3/parser"
 	"tucil3/searchtrace"
 )
@@ -15,6 +15,8 @@ const (
 	AlgorithmUCS Algorithm = iota
 	AlgorithmGBFS
 	AlgorithmAStar
+	AlgorithmBFS
+	AlgorithmDFS
 )
 
 // Node pada search tree
@@ -26,6 +28,7 @@ type SearchNode struct {
 	GCost    int
 	HCost    int
 	Priority int
+	Depth    int
 	StepPath []graph.Pos
 
 	Index int

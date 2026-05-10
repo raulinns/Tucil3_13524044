@@ -18,6 +18,14 @@ func AStar(board *parser.BoardConfig, heuristicMode string) Result {
 	return graphSearch(board, AlgorithmAStar, heuristicMode)
 }
 
+func BFS(board *parser.BoardConfig) Result {
+	return unweightedGraphSearch(board, AlgorithmBFS, nil)
+}
+
+func DFS(board *parser.BoardConfig) Result {
+	return unweightedGraphSearch(board, AlgorithmDFS, nil)
+}
+
 func UCSWithTrace(board *parser.BoardConfig) (Result, []searchtrace.Step) {
 	var trace []searchtrace.Step
 	result := graphSearchWithTrace(board, AlgorithmUCS, "", &trace)
@@ -36,7 +44,14 @@ func AStarWithTrace(board *parser.BoardConfig, heuristicMode string) (Result, []
 	return result, trace
 }
 
-// // Algoritma Bonus
-// func BFS(board *parser.BoardConfig, heuristicMode string) Result {
-// 	return graphSearch(board, AlgorithmBFS, heuristicMode)
-// }
+func BFSWithTrace(board *parser.BoardConfig) (Result, []searchtrace.Step) {
+	var trace []searchtrace.Step
+	result := unweightedGraphSearch(board, AlgorithmBFS, &trace)
+	return result, trace
+}
+
+func DFSWithTrace(board *parser.BoardConfig) (Result, []searchtrace.Step) {
+	var trace []searchtrace.Step
+	result := unweightedGraphSearch(board, AlgorithmDFS, &trace)
+	return result, trace
+}

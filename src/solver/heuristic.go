@@ -3,7 +3,7 @@ package solver
 import (
 	"math"
 
-	"tucil3/game"
+	graph "tucil3/game"
 	"tucil3/parser"
 )
 

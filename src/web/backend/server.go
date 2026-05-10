@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"tucil3/game"
+	graph "tucil3/game"
 	"tucil3/parser"
 	"tucil3/searchtrace"
 	"tucil3/solver"
@@ -209,6 +209,12 @@ func runSolver(board *parser.BoardConfig, algorithm, heuristic string) (solver.R
 		return result, trace, nil
 	case "ASTAR", "A*":
 		result, trace := solver.AStarWithTrace(board, heuristic)
+		return result, trace, nil
+	case "BFS":
+		result, trace := solver.BFSWithTrace(board)
+		return result, trace, nil
+	case "DFS":
+		result, trace := solver.DFSWithTrace(board)
 		return result, trace, nil
 	default:
 		return solver.Result{}, nil, fmt.Errorf("algorithm tidak valid: %q", algorithm)
