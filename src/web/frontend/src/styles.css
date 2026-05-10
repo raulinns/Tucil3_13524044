@@ -141,6 +141,7 @@ select {
 }
 
 .primary-button,
+.secondary-button,
 .playback-buttons button,
 .graph-actions button {
   background: #2563eb;
@@ -152,6 +153,12 @@ select {
 }
 
 .primary-button {
+  width: 100%;
+}
+
+.secondary-button {
+  background: #17212f;
+  margin-top: 12px;
   width: 100%;
 }
 

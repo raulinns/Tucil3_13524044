@@ -6,6 +6,8 @@ import PlaybackControls from "./components/PlaybackControls.jsx";
 import ResultPanel from "./components/ResultPanel.jsx";
 
 const initialResult = {
+  algorithm: "",
+  heuristic: "",
   found: false,
   moves: "",
   totalCost: 0,

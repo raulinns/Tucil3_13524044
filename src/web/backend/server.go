@@ -23,6 +23,8 @@ type VisualStep struct {
 }
 
 type SolveResponse struct {
+	Algorithm   string       `json:"algorithm"`
+	Heuristic   string       `json:"heuristic,omitempty"`
 	Found       bool         `json:"found"`
 	Moves       string       `json:"moves"`
 	TotalCost   int          `json:"totalCost"`
@@ -174,6 +176,8 @@ func handleSolve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, SolveResponse{
+		Algorithm:   displayAlgorithm(algorithm),
+		Heuristic:   responseHeuristic(algorithm, heuristic),
 		Found:       result.Found,
 		Moves:       movesToString(result.Moves),
 		TotalCost:   result.TotalCost,
@@ -197,6 +201,20 @@ func normalizeHeuristic(value string) string {
 	default:
 		return solver.HeuristicManhattanCost
 	}
+}
+
+func displayAlgorithm(algorithm string) string {
+	if algorithm == "ASTAR" {
+		return "A*"
+	}
+	return algorithm
+}
+
+func responseHeuristic(algorithm, heuristic string) string {
+	if algorithm == "GBFS" || algorithm == "ASTAR" || algorithm == "A*" {
+		return heuristic
+	}
+	return ""
 }
 
 func runSolver(board *parser.BoardConfig, algorithm, heuristic string) (solver.Result, []searchtrace.Step, error) {

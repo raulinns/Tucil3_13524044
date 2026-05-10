@@ -111,6 +111,7 @@ func main() {
 		fmt.Println("Solusi tidak ditemukan.")
 		fmt.Println("Banyak iterasi:", result.Iterations)
 		fmt.Printf("Waktu eksekusi: %d ms\n", result.ExecutionMs)
+		promptSaveSolution(reader, board, result, algorithmName, heuristicChoice)
 		return
 	}
 
@@ -123,6 +124,7 @@ func main() {
 	fmt.Println()
 	fmt.Println("=== Visualisasi Solusi ===")
 	printSolution(board, result)
+	promptSaveSolution(reader, board, result, algorithmName, heuristicChoice)
 }
 
 func readLine(reader *bufio.Reader) (string, error) {
@@ -181,5 +183,114 @@ func printSolution(board *parser.BoardConfig, result solver.Result) {
 func printGrid(grid [][]rune) {
 	for _, row := range grid {
 		fmt.Println(string(row))
+	}
+}
+
+func promptSaveSolution(
+	reader *bufio.Reader,
+	board *parser.BoardConfig,
+	result solver.Result,
+	algorithmName string,
+	heuristicChoice string,
+) {
+	fmt.Println()
+	fmt.Print("Simpan hasil solusi ke file .txt? (y/n): ")
+	choice, err := readLine(reader)
+	if err != nil {
+		fmt.Println("Gagal membaca pilihan simpan:", err)
+		return
+	}
+
+	choice = strings.ToLower(strings.TrimSpace(choice))
+	if choice != "y" && choice != "ya" {
+		return
+	}
+
+	fmt.Print("Masukkan path output (contoh: test/output.txt): ")
+	outputPath, err := readLine(reader)
+	if err != nil {
+		fmt.Println("Gagal membaca path output:", err)
+		return
+	}
+
+	outputPath = strings.TrimSpace(outputPath)
+	if outputPath == "" {
+		fmt.Println("Path output tidak boleh kosong.")
+		return
+	}
+
+	if !strings.HasSuffix(strings.ToLower(outputPath), ".txt") {
+		outputPath += ".txt"
+	}
+
+	content := formatSolutionText(board, result, algorithmName, heuristicChoice)
+	if err := os.WriteFile(outputPath, []byte(content), 0644); err != nil {
+		fmt.Println("Gagal menyimpan hasil:", err)
+		return
+	}
+
+	fmt.Println("Hasil solusi disimpan ke:", outputPath)
+}
+
+func formatSolutionText(
+	board *parser.BoardConfig,
+	result solver.Result,
+	algorithmName string,
+	heuristicChoice string,
+) string {
+	var builder strings.Builder
+
+	builder.WriteString("Ice Sliding Puzzle Solver\n")
+	builder.WriteString("=========================\n\n")
+	builder.WriteString("Algoritma: ")
+	builder.WriteString(algorithmName)
+	builder.WriteString("\n")
+
+	if algorithmName == "GBFS" || algorithmName == "A*" {
+		builder.WriteString("Heuristic: ")
+		builder.WriteString(heuristicChoice)
+		builder.WriteString("\n")
+	}
+
+	if result.Found {
+		builder.WriteString("Status: Solusi ditemukan\n")
+		builder.WriteString("Solusi gerakan: ")
+		builder.WriteString(movesToString(result.Moves))
+		builder.WriteString("\n")
+		builder.WriteString(fmt.Sprintf("Cost solusi: %d\n", result.TotalCost))
+	} else {
+		builder.WriteString("Status: Solusi tidak ditemukan\n")
+	}
+
+	builder.WriteString(fmt.Sprintf("Banyak iterasi: %d\n", result.Iterations))
+	builder.WriteString(fmt.Sprintf("Waktu eksekusi: %d ms\n\n", result.ExecutionMs))
+	builder.WriteString("Visualisasi Solusi\n")
+	builder.WriteString("------------------\n")
+
+	if len(result.PathNodes) == 0 {
+		start := graph.Node{Row: board.StartRow, Col: board.StartCol, NextTarget: 0}
+		builder.WriteString("Initial\n")
+		writeGrid(&builder, graph.ApplyStateToGrid(board, start))
+		return builder.String()
+	}
+
+	for i, node := range result.PathNodes {
+		if i == 0 {
+			builder.WriteString("Initial\n")
+		} else {
+			builder.WriteString(fmt.Sprintf("Step %d: %s\n", i, graph.DirName(result.Moves[i-1])))
+		}
+
+		writeGrid(&builder, graph.ApplyStateToGrid(board, node))
+		builder.WriteString("\n")
+	}
+
+	return builder.String()
+}
+
+func writeGrid(builder *strings.Builder, grid [][]rune) {
+	for _, row := range grid {
+		builder.WriteString(string(row))
+		builder.WriteString("\n")
 	}
 }
